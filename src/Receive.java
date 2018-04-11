@@ -37,12 +37,16 @@ public class Receive {
 		// socket
 		DatagramSocket socket = null;
 		
+		// number of expected packets to be received
+		int numOfExpectedPackets = 0;
+		
 		try {
 			// create socket
 			socket = new DatagramSocket(port);
 			
 			// buffer
-			byte[] buffer = new byte[65536];
+			// 65507 is the maximum of UDP packet
+			byte[] buffer = new byte[65507];
 			DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
 			
 			System.out.println("> Java [Receive] -> socket created - listening on port " + port + " for incoming data...");
@@ -56,10 +60,15 @@ public class Receive {
 				// ... convert to byte
 				int[] data = decodeDataToParameters(incomingData);
 				
+				
 				System.out.println("> Java [Receive] -> data received - value(s): [0] " + data[0] + " [1] " + data[1]);
 				
 				// transmit
 				if(data[1] != 0) {
+					if (numOfExpectedPackets == 0) {
+						numOfExpectedPackets = data[1];
+					}
+					
 					if (!started) {
 						startTime = System.nanoTime();
 						started = true;
@@ -77,19 +86,25 @@ public class Receive {
 					double endTime = (System.nanoTime() - startTime) / 1000000.0;
 					int duplicatePackages = countReceivedPackets - data[0];
 					int lostPackages = 0;
-					for(int i = 0; i < data[0]; ++i) {
-						if(lookupTable[i] == null) {
-							++lostPackages;
+					
+					// write to file
+					try (Writer writer = new BufferedWriter(new FileWriter("results" + numOfExpectedPackets + ".txt", true))) {
+						for(int i = 0; i < data[0]; i++) {
+							if(lookupTable[i] == null) {
+								lostPackages++;
+							}
 						}
+
+						writer.write(endTime + " " + lostPackages + " " + duplicatePackages + "\n");
 					}
 					
-					// TODO: write to file?
 					System.out.println("> Java [Receive] -> finished transmitting - endTime: " + endTime + " lostPackages: " + lostPackages + " countReceivedPackets: " + countReceivedPackets + " duplicatePackages: " + duplicatePackages);
 					
 					// reset stuff...
 					started = false;
 					countReceivedPackets = 0;
 					lookupTable = new byte[10000][1500];
+					numOfExpectedPackets = 0;
 				}
 			}
 			

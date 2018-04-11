@@ -14,8 +14,8 @@ public class Transmit {
 	 */
 	public static void main(String[] args) {
 		// check args
-		if(args.length != 4) {
-			System.out.println("> Java [Transmit] -> argument(s): <ip> <port> <packets> <size>");
+		if(args.length < 4) {
+			System.out.println("> Java [Transmit] -> argument(s): <ip> <port> <packets> <size> <repeat (optional)>");
 			return;
 		}
 		
@@ -33,6 +33,12 @@ public class Transmit {
 		int packets = Integer.valueOf(args[2]);
 		// arg[3] -> int to byte size (packet size)
 		int size = Integer.valueOf(args[3]);
+		// number of repeats
+		@SuppressWarnings("unused")
+		int repeat = 1;
+		if (args.length > 4) {
+			repeat = Integer.valueOf(args[4]);
+		}
 		
 		// packets sequence number
 		int counter = -1;
@@ -80,10 +86,19 @@ public class Transmit {
 			}
 			
 			// shutdown:
-			
+			socket.disconnect();
 			socket.close();
 			System.exit(0);
 			
+			// repeat or exit
+			/*
+			if (repeat > 1) {
+				args[0] = String.valueOf(repeat - 1);
+				main(args);
+			} else {
+				System.exit(0);
+			}
+			*/
 		} catch (IOException e) {
 			System.err.println("IOException " + e);
 		}
