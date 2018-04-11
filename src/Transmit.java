@@ -88,17 +88,16 @@ public class Transmit {
 			// shutdown:
 			socket.disconnect();
 			socket.close();
-			System.exit(0);
 			
 			// repeat or exit
-			/*
+			
 			if (repeat > 1) {
-				args[0] = String.valueOf(repeat - 1);
+				args[4] = String.valueOf(repeat - 1);
 				main(args);
 			} else {
 				System.exit(0);
 			}
-			*/
+			
 		} catch (IOException e) {
 			System.err.println("IOException " + e);
 		}
