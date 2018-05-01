@@ -29,12 +29,11 @@ public class Transmit {
 		}
 		// arg[1] -> port
 		int port = Integer.valueOf(args[1]);
-		// arg[2] -> packaets
+		// arg[2] -> packets
 		int packets = Integer.valueOf(args[2]);
-		// arg[3] -> int to byte size (packet size)
+		// arg[3] -> size (bytes)
 		int size = Integer.valueOf(args[3]);
 		// number of repeats
-		@SuppressWarnings("unused")
 		int repeat = 1;
 		if (args.length > 4) {
 			repeat = Integer.valueOf(args[4]);
@@ -43,12 +42,17 @@ public class Transmit {
 		// packets sequence number
 		int counter = -1;
 		
-		// socket
-		DatagramSocket socket = null;
+		// create UDP/IP socket
+		DatagramSocket datagramSocket = null;
 		
 		try {
 			// create socket
-			socket = new DatagramSocket();
+			datagramSocket = new DatagramSocket();
+			
+			// buffer
+			// 65507 is the maximum of UDP packet
+			byte[] buffer = new byte[65507];
+			DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
 			
 			System.out.println("> Java [Transmit] -> socket created - ip: " + ip + " port: " + port);
 			
@@ -59,7 +63,6 @@ public class Transmit {
 			DatagramPacket datagramPacket;
 			
 			// send normal packets:
-			
 			while (counter != packets - 1) {
 				++counter;
 				
@@ -70,24 +73,28 @@ public class Transmit {
 				datagramPacket = new DatagramPacket(data, data.length, ip, port);
 			
 				//send the message to receiver
-				socket.send(datagramPacket);
+				datagramSocket.send(datagramPacket);
 				
-				System.out.println("> Java [Transmit] -> sending packet " + counter);
+				//System.out.println("> Java [Transmit] -> sending packet " + counter);
+				
+				// acknowledgement:
+				// receive incoming data before sending the next packet
+				datagramSocket.receive(incoming);
 			}
 			
-			// send exit packets:
 			
+			// send exit packets:
 			data = encodeParametersToData(packets, 0, 8);
 			datagramPacket = new DatagramPacket(data, data.length, ip, port);
 
 			for(int i = 0; i < 10; ++i) {
-				socket.send(datagramPacket);
-				System.out.println("> Java [Transmit] -> sending EXIT packet " + i);
+				datagramSocket.send(datagramPacket);
+				//System.out.println("> Java [Transmit] -> sending EXIT packet " + i);
 			}
 			
-			// shutdown:
-			socket.disconnect();
-			socket.close();
+			// shutdown UDP/IP socket:
+			datagramSocket.disconnect();
+			datagramSocket.close();
 			
 			// repeat or exit
 			

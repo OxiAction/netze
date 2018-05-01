@@ -34,34 +34,33 @@ public class Receive {
 		// determine if started
 		boolean started = false;
 		
-		// socket
-		DatagramSocket socket = null;
+		// sockets
+		DatagramSocket datagramSocket = null; // UDP
 		
 		// number of expected packets to be received
 		int numOfExpectedPackets = 0;
 		
 		try {
-			// create socket
-			socket = new DatagramSocket(port);
+			// create UDP/IP socket
+			datagramSocket = new DatagramSocket(port);
 			
 			// buffer
 			// 65507 is the maximum of UDP packet
 			byte[] buffer = new byte[65507];
 			DatagramPacket incoming = new DatagramPacket(buffer, buffer.length);
 			
-			System.out.println("> Java [Receive] -> socket created - listening on port " + port + " for incoming data...");
+			System.out.println("> Java [Receive] -> datagramSocket created - listening on port " + port + " for incoming data...");
 			
 			while (true) {
 				// receive incoming data
-				socket.receive(incoming);
+				datagramSocket.receive(incoming);
 				
 				// receive data
 				byte[] incomingData = incoming.getData();
 				// ... convert to byte
 				int[] data = decodeDataToParameters(incomingData);
 				
-				
-				System.out.println("> Java [Receive] -> data received - value(s): [0] " + data[0] + " [1] " + data[1]);
+				//System.out.println("> Java [Receive] -> data received - value(s): [0] " + data[0] + " [1] " + data[1]);
 				
 				// transmit
 				if(data[1] != 0) {
@@ -73,6 +72,12 @@ public class Receive {
 						startTime = System.nanoTime();
 						started = true;
 					}
+					
+					// acknowledgement:
+					// send back the counter of this packet to the transmitter
+					buffer = encodeParametersToData(data[0]);
+                    DatagramPacket datagramPacket = new DatagramPacket(buffer, buffer.length, incoming.getAddress(), incoming.getPort());
+                    datagramSocket.send(datagramPacket);
 					
 					++countReceivedPackets;
 					
@@ -124,5 +129,21 @@ public class Receive {
 		int packets = (data[4] << 24) & 0xff000000 | (data[5] << 16) & 0x00ff0000 | (data[6] << 8) & 0x0000ff00 | (data[7] << 0) & 0x000000ff;
 		
 		return new int[] {counter, packets};
+	}
+	
+	/**
+	 * Encode parameters to data bytes
+	 * 
+	 * @param packet
+	 * @return
+	 */
+	private static byte[] encodeParametersToData(int packet) {
+		byte[] data = new byte[4];
+		data[0] = (byte) (packet >> 24);
+		data[1] = (byte) (packet >> 16);
+		data[2] = (byte) (packet >> 8);
+		data[3] = (byte) packet;
+		
+		return data;
 	}
 }
